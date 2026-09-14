@@ -1,0 +1,35 @@
+[package]
+name = "occonfig"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.80"
+description = "Named model profiles for your opencode configuration"
+license = "Apache-2.0"
+repository = "https://github.com/defilantech/occonfig"
+homepage = "https://github.com/defilantech/occonfig"
+readme = "README.md"
+keywords = ["opencode", "cli", "configuration", "profiles"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "occonfig"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+dirs = "5"
+serde = { version = "1", features = ["derive"] }
+# `preserve_order` keeps object key order on write. Without it serde_json
+# emits alphabetical keys, which would reorder the user's `agent` block on
+# every save. This is load-bearing; see AGENTS.md and `saving_preserves_agent_key_order`.
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+
+[profile.release]
+strip = true

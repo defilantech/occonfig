@@ -1,0 +1,42 @@
+# Rust build artifacts
+/target
+
+# Cargo lock is committed for binaries; keep it tracked.
+# (Nothing to ignore here, listed for clarity.)
+
+# Rust backup files
+*.rs.bk
+
+# Coverage output
+lcov.info
+/cover.out
+
+# GoReleaser output
+dist/
+
+# Editor and IDE paraphernalia
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+
+# Claude Code settings (IDE-specific)
+.claude/
+CLAUDE.md
+
+# Environment files (may contain secrets)
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Superpowers agent working state (specs/plans/ledger live outside the repo).
+.superpowers/
+/docs/superpowers/plans/
+/docs/superpowers/specs/

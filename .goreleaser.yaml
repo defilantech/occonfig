@@ -1,0 +1,153 @@
+# GoReleaser configuration for occonfig
+# https://goreleaser.com/customization/
+
+version: 2
+
+before:
+  hooks:
+    # GoReleaser's Rust builder shells out to `cargo zigbuild`, which is not
+    # part of a stock toolchain. The release workflow runs on ubuntu-latest
+    # with `dtolnay/rust-toolchain`, which provides rustup, and the darwin
+    # targets are cross-compiled from that runner, so zigbuild is required.
+    #
+    # `rustup default stable` is deliberately absent: it is redundant on a
+    # rustup-managed CI runner and fails outright on a Homebrew Rust install,
+    # which has no rustup at all.
+    - cargo install --locked cargo-zigbuild
+    # Tests run in a separate CI workflow (test.yml) before a release is
+    # triggered, so there is no test hook here.
+    - cargo fetch
+
+builds:
+  - id: occonfig
+    builder: rust
+    binary: occonfig
+
+    # Rust target triples. GoReleaser translates these into GOOS/GOARCH for
+    # archive naming, so the templates below still produce e.g.
+    # occonfig_0.1.0_darwin_arm64.tar.gz, which
+    # hack/publish-homebrew-formula.sh globs for. Change one and you must
+    # change the other.
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+      - x86_64-apple-darwin
+      - aarch64-apple-darwin
+
+    flags:
+      - --release
+
+archives:
+  - id: occonfig
+    ids:
+      - occonfig
+
+    # Archive name template. Must match the glob in
+    # hack/publish-homebrew-formula.sh.
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  use: github
+
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+
+  groups:
+    - title: "New Features"
+      regexp: "^feat:"
+      order: 0
+    - title: "Bug Fixes"
+      regexp: "^fix:"
+      order: 1
+    - title: "Performance Improvements"
+      regexp: "^perf:"
+      order: 2
+    - title: "Other Changes"
+      order: 999
+
+release:
+  github:
+    owner: defilantech
+    name: occonfig
+
+  # Keep Release Please's changelog, just add assets.
+  mode: keep-existing
+
+  # Release name template.
+  name_template: "v{{.Version}}"
+
+  # Not a draft: the release is published when the tag is cut.
+  draft: false
+
+  # Recreate the release if the tag already exists.
+  replace_existing_draft: true
+
+  # Footer with installation instructions (Release Please provides the changelog).
+  footer: |
+    ---
+
+    ## Installation
+
+    ### Homebrew (Recommended for macOS and Linux)
+    ```bash
+    brew install defilantech/tap/occonfig
+    ```
+
+    ### Manual Download
+
+    **macOS**
+    ```bash
+    # ARM64 (Apple Silicon)
+    curl -L https://github.com/defilantech/occonfig/releases/download/v{{ .Version }}/occonfig_{{ .Version }}_darwin_arm64.tar.gz | tar xz
+    sudo mv occonfig /usr/local/bin/
+
+    # AMD64
+    curl -L https://github.com/defilantech/occonfig/releases/download/v{{ .Version }}/occonfig_{{ .Version }}_darwin_amd64.tar.gz | tar xz
+    sudo mv occonfig /usr/local/bin/
+    ```
+
+    **Linux**
+    ```bash
+    # AMD64
+    curl -L https://github.com/defilantech/occonfig/releases/download/v{{ .Version }}/occonfig_{{ .Version }}_linux_amd64.tar.gz | tar xz
+    sudo mv occonfig /usr/local/bin/
+
+    # ARM64
+    curl -L https://github.com/defilantech/occonfig/releases/download/v{{ .Version }}/occonfig_{{ .Version }}_linux_arm64.tar.gz | tar xz
+    sudo mv occonfig /usr/local/bin/
+    ```
+
+    ### Verify Installation
+    ```bash
+    occonfig --version
+    ```
+
+    **Full Changelog**: [CHANGELOG.md](https://github.com/defilantech/occonfig/blob/main/CHANGELOG.md)
+
+# Homebrew tap: NOT configured here. GoReleaser removed `brews` (formulae) in
+# v2.16 and its only replacement, `homebrew_casks`, produces macOS-only casks,
+# which drops Linux Homebrew for a cross-platform CLI (see llmkube #1039 /
+# #1040). The release workflow instead runs hack/publish-homebrew-formula.sh to
+# publish a cross-platform binary formula from dist/checksums.txt.
+
+# Metadata
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
