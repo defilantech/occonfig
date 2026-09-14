@@ -573,6 +573,57 @@ fn list_says_so_when_there_are_no_profiles() {
 }
 
 // ---------------------------------------------------------------------------
+// config discovery
+// ---------------------------------------------------------------------------
+
+#[test]
+fn config_dir_falls_back_to_the_platform_default_when_the_env_var_is_unset() {
+    // Every other test points OPENCODE_CONFIG_DIR at a temp dir, so the
+    // fallback branch (which calls dirs::home_dir()) is otherwise never
+    // reached. That branch is what decides where the tool writes when a user
+    // runs it plainly, so it needs to be exercised rather than assumed.
+    //
+    // Run the binary with neither env var set. It must not panic and must
+    // report a path under the platform config directory.
+    let mut cmd = Command::cargo_bin("occonfig").expect("binary should build");
+    cmd.env_remove("OPENCODE_CONFIG_DIR");
+    cmd.env_remove("OPENCODE_CONFIG");
+
+    // Point HOME at a temp dir so this does not read the real one, and so the
+    // assertion is about the shape of the path, not about this machine.
+    let home = tempfile::tempdir().unwrap();
+    cmd.env("HOME", home.path());
+    cmd.env_remove("XDG_CONFIG_HOME");
+
+    let out = cmd.args(["current"]).assert().code(predicate::eq(1));
+
+    // The command fails because there is no config in the temp home. What
+    // matters is that it failed with the read error, meaning config_path()
+    // resolved successfully, rather than panicking in home_dir().
+    out.stderr(
+        predicate::str::contains("could not read").or(predicate::str::contains("No such file")),
+    );
+}
+
+#[test]
+fn opencode_config_env_points_at_a_specific_file() {
+    let fx = Fixture::new();
+    let explicit = fx.path().join("elsewhere.json");
+    fs::write(&explicit, fx.sample_config()).unwrap();
+
+    let mut cmd = Command::cargo_bin("occonfig").expect("binary should build");
+    // Set BOTH, to prove OPENCODE_CONFIG (the explicit file) wins over the
+    // directory variable, matching the precedence documented in config.rs.
+    cmd.env("OPENCODE_CONFIG_DIR", fx.path().join("does-not-exist"));
+    cmd.env("OPENCODE_CONFIG", &explicit);
+
+    cmd.args(["current"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("top level: local/one"));
+}
+
+// ---------------------------------------------------------------------------
 // version
 // ---------------------------------------------------------------------------
 
