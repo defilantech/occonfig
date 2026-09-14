@@ -152,8 +152,9 @@ design conversation first, not a PR.
 
 ## Do not
 
-- Do not hand-edit `CHANGELOG.md` outside the `## [Unreleased]` seed.
-  `release-please` owns it from the first release.
+- Do not hand-edit `CHANGELOG.md`. `release-please` owns it and rewrites the
+  released sections from conventional commit messages on every release PR.
+  Fix the commit message instead.
 - Do not commit a real opencode configuration. Fixtures only, redacted.
 - Do not commit secrets, API keys, or personal endpoints.
 - Do not add a code path that contacts a network. `occonfig` rewrites strings
