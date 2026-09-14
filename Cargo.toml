@@ -1,6 +1,6 @@
 [package]
 name = "occonfig"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.80"
 description = "Named model profiles for your opencode configuration"
