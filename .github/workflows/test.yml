@@ -17,6 +17,9 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # stable
         with:
+          # The `toolchain` input is required when the action is pinned to a
+          # SHA: without a branch ref it cannot infer which toolchain to use.
+          toolchain: stable
           components: llvm-tools-preview
 
       - name: Cache cargo
@@ -24,7 +27,9 @@ jobs:
 
       - name: Install cargo-llvm-cov
         # The coverage tool is not in the image; install it before it is used.
-        uses: taiki-e/install-action@cargo-llvm-cov
+        uses: taiki-e/install-action@3f74d7c16a4242f1c95561e98edc25d36adb4375 # v2.87.12
+        with:
+          tool: cargo-llvm-cov
 
       - name: Running Tests
         run: cargo test
